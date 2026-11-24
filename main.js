@@ -81,30 +81,45 @@
       const now = ctx.currentTime;
 
       if (type === 'click') {
+        // Organic physical switch tap (like a soft mechanical keyboard switch)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(640, now);
-        osc.frequency.exponentialRampToValueAtTime(1020, now + 0.08);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.04);
+        gain.gain.setValueAtTime(0.045, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
         osc.start(now);
-        osc.stop(now + 0.08);
+        osc.stop(now + 0.04);
       } else if (type === 'success') {
-        osc.type = 'triangle';
+        // Warm organic harmonic chime
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-        osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(783.99, now + 0.12); // G5
+        gain2.gain.setValueAtTime(0.04, now + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
         osc.start(now);
         osc.stop(now + 0.35);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.35);
       } else if (type === 'open') {
+        // Soft velvet air swell
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(750, now + 0.15);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(290, now + 0.1);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
         osc.start(now);
-        osc.stop(now + 0.15);
+        osc.stop(now + 0.12);
       }
     } catch (e) {
       // Audio autoplay policy fail-safe
@@ -125,7 +140,7 @@
   }
 
   /* ==========================================================================
-     2. DYNAMIC TYPEWRITER EFFECT
+     2. DYNAMIC TYPEWRITER EFFECT (Human Cadence Simulation)
      ========================================================================== */
   const roles = [
     'Aspiring Full Stack Developer',
@@ -138,30 +153,40 @@
   let roleIdx = 0;
   let charIdx = 0;
   let isDeleting = false;
-  let typingDelay = 100;
 
   function typeRole() {
     if (!typewriterElement) return;
 
     const currentRole = roles[roleIdx];
+    let typingDelay = 80;
 
     if (isDeleting) {
       typewriterElement.textContent = currentRole.substring(0, charIdx - 1);
       charIdx--;
-      typingDelay = 40;
+      // Snappy, realistic backspacing
+      typingDelay = Math.floor(Math.random() * 15) + 25;
     } else {
       typewriterElement.textContent = currentRole.substring(0, charIdx + 1);
+      const typedChar = currentRole.charAt(charIdx);
       charIdx++;
-      typingDelay = 90;
+
+      // Human keystroke variance
+      if (typedChar === ' ' || typedChar === '&' || typedChar === '.') {
+        // Natural human pause at word boundary or punctuation
+        typingDelay = Math.floor(Math.random() * 80) + 160;
+      } else {
+        // Organic typing rhythm (bursts and micro-pauses)
+        typingDelay = Math.floor(Math.random() * 50) + 50;
+      }
     }
 
     if (!isDeleting && charIdx === currentRole.length) {
-      typingDelay = 2200; // Pause at end of text
+      typingDelay = 2400; // Human pause to let reader absorb
       isDeleting = true;
     } else if (isDeleting && charIdx === 0) {
       isDeleting = false;
       roleIdx = (roleIdx + 1) % roles.length;
-      typingDelay = 450;
+      typingDelay = 500; // Human hesitation before starting next phrase
     }
 
     setTimeout(typeRole, typingDelay);
@@ -170,53 +195,100 @@
   setTimeout(typeRole, 600);
 
   /* ==========================================================================
-     3. 3D CARD PERSPECTIVE TILT
+     3. TACTILE CARD SPOTLIGHT & NATURAL SPRING PHYSICS
      ========================================================================== */
   const tiltCards = document.querySelectorAll('.tilt-card');
 
   tiltCards.forEach((card) => {
+    let rect = null;
+
+    card.addEventListener('mouseenter', () => {
+      rect = card.getBoundingClientRect();
+    });
+
     card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
+      if (!rect) rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+
+      // Update dynamic radial spotlight coordinates
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+
+      // Gentle, refined physical tilt (max +/- 3.5 deg - solid & tactile)
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
+      const rotateX = ((y - centerY) / centerY) * -3.2;
+      const rotateY = ((x - centerX) / centerX) * 3.2;
 
-      // Calculate tilt angles (max +/- 10 degrees)
-      const rotateX = ((y - centerY) / centerY) * -9;
-      const rotateY = ((x - centerX) / centerX) * 9;
-
-      card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)`;
+      card.style.transform = `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-5px)`;
     });
 
     card.addEventListener('mouseleave', () => {
-      card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+      card.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+      card.style.removeProperty('--mouse-x');
+      card.style.removeProperty('--mouse-y');
+      rect = null;
     });
   });
 
   /* ==========================================================================
-     4. CUSTOM CURSOR
+     3.1 MAGNETIC BUTTONS (Human Micro-Interaction)
+     ========================================================================== */
+  const magneticButtons = document.querySelectorAll('.cta-btn, .nav-resume-btn, .sound-toggle-btn, .copy-btn, .form-submit-btn');
+
+  magneticButtons.forEach((btn) => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+
+      // Gentle magnetic pull (max 5px)
+      btn.style.transform = `translate(${x * 0.22}px, ${y * 0.22}px)`;
+    });
+
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'translate(0px, 0px)';
+    });
+  });
+
+  /* ==========================================================================
+     4. CUSTOM CURSOR WITH INERTIA & FLUID LERP
      ========================================================================== */
   if (customCursor && cursorTrail) {
     let mouseX = -100, mouseY = -100;
     let trailX = -100, trailY = -100;
+    let isClicking = false;
 
     window.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      customCursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+      customCursor.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%) ${isClicking ? 'scale(0.8)' : 'scale(1)'}`;
+    }, { passive: true });
+
+    window.addEventListener('mousedown', () => {
+      isClicking = true;
+      customCursor.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%) scale(0.75)`;
+      cursorTrail.style.transform = `translate(${trailX}px, ${trailY}px) translate(-50%, -50%) scale(0.9)`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isClicking = false;
+      customCursor.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%) scale(1)`;
+      cursorTrail.style.transform = `translate(${trailX}px, ${trailY}px) translate(-50%, -50%) scale(1)`;
     });
 
     function renderTrail() {
-      trailX += (mouseX - trailX) * 0.22;
-      trailY += (mouseY - trailY) * 0.22;
-      cursorTrail.style.transform = `translate(${trailX}px, ${trailY}px)`;
+      // Fluid spring damping
+      trailX += (mouseX - trailX) * 0.18;
+      trailY += (mouseY - trailY) * 0.18;
+      cursorTrail.style.transform = `translate(${trailX}px, ${trailY}px) translate(-50%, -50%)`;
       requestAnimationFrame(renderTrail);
     }
     requestAnimationFrame(renderTrail);
 
     // Hover effect for interactive elements
-    const interactiveElements = document.querySelectorAll('a, button, input, textarea, .skill-card, .tilt-card');
+    const interactiveElements = document.querySelectorAll('a, button, input, textarea, .tilt-card');
     interactiveElements.forEach((el) => {
       el.addEventListener('mouseenter', () => {
         customCursor.classList.add('active');
